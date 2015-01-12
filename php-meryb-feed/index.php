@@ -20,68 +20,108 @@
 	header('Cache-Control: no-cache, must-revalidate');
 	header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 	header('Content-type: application/json');
+	header("Access-Control-Allow-Origin: *"); // required for all clients to connect	
 
 	// convert feed http://services.cbib.u-bordeaux2.fr/MERYB/mx_feed.xml
+	$feedUrl = 'http://services.cbib.u-bordeaux2.fr/MERYB/mx_feed.xml';	
 	$jsonResponse = "";
-	$datasets = array();
 
-	$feedUrl = 'http://services.cbib.u-bordeaux2.fr/MERYB/mx_feed.xml';
-	$feedXML = file_get_contents($feedUrl);
+	// set/determine use of cache
+	$cacheFile = md5($feedUrl) . '.cache';
+	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 900 ) ) {
+		$jsonResponse = file_get_contents($cacheFile);
+	} else {
 
-	$feed = simplexml_load_string($feedXML);
-	
-	foreach ($feed->entries->entry as $idx => $dataRecord) {
 
-		//print_r($dataRecord);
-			
-		$dataset = array();
+		$datasets = array();
 
-		$accession	= trim((string)$dataRecord->Attributes());
+		// add JSON-LD context
+		$datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';		
+
+		$datasets['provider'] = 'Metabolomic Repository Bordeaux';
+		$datasets['url'] = 'http://services.cbib.u-bordeaux2.fr/MERYB/home/home.php';
+		$datasets['description'] = 'MeRy-B is a plant metabolomics platform allowing the storage and visualisation of Nuclear Magnetic Resonance (NMR) metabolic profiles from plants. It contains plant metabolites and unknown compounds lists with information about experimental conditions and metabolite concentrations from several plant species compiled from a thousand of curated annotated NMR profiles on various organs or tissues.';
+
+		$datasets['datasets'] = array();		
+
+		// fetch data
+		$feedXML = file_get_contents($feedUrl);
+		$feed = simplexml_load_string($feedXML);
 		
-		$dataset['accession']	= (string) $accession;
-		$dataset['url']			= 'http://www.cbib.u-bordeaux2.fr/MERYB/res/project/' . (string) $accession;
-		$dataset['title']		= (string) $dataRecord->name;
-		$dataset['description']	= (string) $dataRecord->description;
+		foreach ($feed->entries->entry as $idx => $dataRecord) {
+				
+			$dataset = array();
 
-		// dates
-		$dataset['date']		= '';
-		foreach ($dataRecord->dates->date as $date){
-			if ((string) $date->Attributes()->type == 'creation'){ $dataset['date'] = (string) $date->Attributes()->value; }				
+			// add JSON-LD context
+			$dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';					
+
+			$accession	= trim((string)$dataRecord->Attributes());
+			
+			$dataset['accession']	= (string) $accession;
+			$dataset['url']			= 'http://www.cbib.u-bordeaux2.fr/MERYB/res/project/' . (string) $accession;
+			$dataset['title']		= (string) $dataRecord->name;
+			$dataset['description']	= (string) $dataRecord->description;
+
+			// dates
+			$dataset['date']		= '';
+			foreach ($dataRecord->dates->date as $date){
+				if ((string) $date->Attributes()->type == 'creation'){ $dataset['date'] = (string) $date->Attributes()->value; }				
+			}
+
+			$timestamp = ''; // convert date to timestamp
+			if (isset($dataset['date']) && $dataset['date'] != ''){
+				list($year, $month, $day) = explode('-', $dataset['date']);
+				$timestamp = mktime(0, 0, 0, $month, $day, $year);
+			}
+			$dataset['timestamp'] = $timestamp;
+
+			// additional fields
+			$organisms 		= array();
+			$metabolites	= array();
+
+			$dataset['submitter']	= 'Daniel Jacob';
+
+			// metadata
+			$metadata = array();				
+			
+			// add metadata JSON-LD
+			$metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';				
+
+			foreach ($dataRecord->additional_fields->field as $field){
+
+				$fieldName = (string) $field->Attributes()->name;
+				$fieldValue = (string) $field;
+
+				if ($fieldName == 'submitter'){ $dataset['submitter'] = $fieldValue; }
+				if ($fieldName == 'technology_type'){ $metadata['analysis'] = $fieldValue; }
+				if ($fieldName == 'platform'){ $metadata['platform'] = $fieldValue; }
+				if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }
+				if ($fieldName == 'metabolite_name'){ $metabolites[] = $fieldValue; }
+
+			}			
+
+			// organism
+			if (count($organisms) > 1){
+				$metadata['organism'] = array();
+				foreach ($organisms as $organism){ $metadata['organism'][] = $organism; }
+			} else if (count($organisms) == 1){ $metadata['organism'] = $organisms[0]; }	
+			
+			// metabolites
+			if (count($metabolites) > 1){
+				$metadata['metabolites'] = array();
+				foreach ($metabolites as $metabolite){ $metadata['metabolites'][] = $metabolite; }
+			} else if (count($metabolites) == 1){ $metadata['metabolites'] = $metabolites[0]; }	
+
+			$dataset['meta'] = $metadata;
+			$datasets['datasets'][] = $dataset;
 		}
 
-		// additional fields
-		$organisms 		= array();
-		$metabolites	= array();
-
-		$dataset['submitter']	= 'Daniel Jacob';
-		$dataset['meta'] 		= array();			
-		foreach ($dataRecord->additional_fields->field as $field){
-
-			$fieldName = (string) $field->Attributes()->name;
-			$fieldValue = (string) $field;
-
-			if ($fieldName == 'submitter'){ $dataset['submitter'] = $fieldValue; }
-			if ($fieldName == 'technology_type'){ $dataset['meta']['analysis'] = $fieldValue; }
-			if ($fieldName == 'platform'){ $dataset['meta']['platform'] = $fieldValue; }
-			if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }
-			if ($fieldName == 'metabolite_name'){ $metabolites[] = $fieldValue; }
-
-		}			
-
-		// organism
-		if (count($organisms) > 1){
-			$dataset['meta']['organism'] = array();
-			foreach ($organisms as $organism){ $dataset['meta']['organism'][] = $organism; }
-		} else if (count($organisms) == 1){ $dataset['meta']['organism'] = $organisms[0]; }	
-		
-		// metabolites
-		if (count($metabolites) > 1){
-			$dataset['meta']['metabolites'] = array();
-			foreach ($metabolites as $metabolite){ $dataset['meta']['metabolites'][] = $metabolite; }
-		} else if (count($metabolites) == 1){ $dataset['meta']['metabolites'] = $metabolites[0]; }	
-
-		$datasets[$accession] = $dataset;
+		// convert to JSON and write file to cache
+		$jsonResponse = json_encode($datasets);
+		$fp = fopen($cacheFile, 'w');
+		fwrite($fp, $jsonResponse);
+		fclose($fp);		
 	}
 
-	echo json_encode(array_values($datasets));
+	echo $jsonResponse;
 ?>

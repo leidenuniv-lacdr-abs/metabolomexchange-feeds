@@ -1,0 +1,13 @@
+{
+   "@context":
+   {
+      "schema": "http://schema.org/",
+      "datacatalog": "http://schema.org/DataCatalog/",
+      "url": {
+         "@id": "schema:url",
+         "@type": "@id"
+      },
+      "provider": "datacatalog:name",
+      "description": "datacatalog:description"
+   }
+}

@@ -20,71 +20,107 @@
 	header('Cache-Control: no-cache, must-revalidate');
 	header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 	header('Content-type: application/json');
+	header("Access-Control-Allow-Origin: *"); // required for all clients to connect	
 
 	// convert feed ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml
+	$feedUrl = 'ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml';	
 	$jsonResponse = "";
-	$datasets = array();
 
-	$feedUrl = 'ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml';
-	$feedXML = file_get_contents($feedUrl);
+	// set/determine use of cache
+	$cacheFile = md5($feedUrl) . '.cache';
+	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 900 ) ) {
+		$jsonResponse = file_get_contents($cacheFile);
+	} else {
 
-	$feed = simplexml_load_string($feedXML);
-	
-	foreach ($feed->entries->entry as $idx => $dataRecord) {
+		$datasets = array();
 
-		$id_prefix = substr((string) $dataRecord->Attributes(),0,5);
+		$datasets['provider'] = 'MetaboLights';
+		$datasets['url'] = 'http://www.ebi.ac.uk/metabolights/';
+		$datasets['description'] = 'MetaboLights is a database for Metabolomics experiments and derived information. The database is cross-species, cross-technique and covers metabolite structures and their reference spectra as well as their biological roles, locations and concentrations, and experimental data from metabolic experiments.';
 
-		if ($id_prefix == 'MTBLS' && $dataRecord->name != 'PRIVATE STUDY'){
-			
-			$dataset = array();
+		// add JSON-LD context
+		$datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';		
 
-			$accession	= trim((string)$dataRecord->Attributes());
-			
-			$dataset['accession']	= (string) $accession;
-			$dataset['url']			= 'http://www.ebi.ac.uk/metabolights/' . (string) $accession;
-			$dataset['title']		= (string) $dataRecord->name;
-			$dataset['description']	= (string) $dataRecord->description;
+		$feedXML = file_get_contents($feedUrl);
 
-			// dates
-			$dataset['date']		= '';
-			foreach ($dataRecord->dates->date as $date){
-				if ((string) $date->Attributes()->type == 'last_modification'){ $dataset['date'] = (string) $date->Attributes()->value; }				
+		$feed = simplexml_load_string($feedXML);
+		
+		foreach ($feed->entries->entry as $idx => $dataRecord) {
+
+			$id_prefix = substr((string) $dataRecord->Attributes(),0,5);
+
+			if ($id_prefix == 'MTBLS' && $dataRecord->name != 'PRIVATE STUDY'){
+				
+				$dataset = array();
+
+				// add JSON-LD context
+				$dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';		
+
+				$accession	= trim((string)$dataRecord->Attributes());
+				
+				$dataset['accession']	= (string) $accession;
+				$dataset['url']			= 'http://www.ebi.ac.uk/metabolights/' . (string) $accession;
+				$dataset['title']		= (string) $dataRecord->name;
+				$dataset['description']	= (string) $dataRecord->description;
+
+				// dates
+				$dataset['date']		= '';
+				foreach ($dataRecord->dates->date as $date){
+					if ((string) $date->Attributes()->type == 'last_modification'){ $dataset['date'] = (string) $date->Attributes()->value; }				
+				}
+
+				$timestamp = ''; // convert date to timestamp
+				if (isset($dataset['date']) && $dataset['date'] != ''){
+					list($year, $month, $day) = explode('-', $dataset['date']);
+					$timestamp = mktime(0, 0, 0, $month, $day, $year);
+				}
+				$dataset['timestamp'] = $timestamp;
+
+				// additional fields
+				$organisms 		= array();
+				$metabolites	= array();
+
+				$dataset['submitter']	= '';
+				$metadata = array();	
+
+				// add metadata JSON-LD
+				$metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';
+
+				foreach ($dataRecord->additional_fields->field as $field){
+
+					$fieldName = (string) $field->Attributes()->name;
+					$fieldValue = (string) $field;
+
+					if ($fieldName == 'submitter'){ $dataset['submitter'] = $fieldValue; }
+					if ($fieldName == 'technology_type'){ $metadata['analysis'] = $fieldValue; }
+					if ($fieldName == 'platform'){ $metadata['platform'] = $fieldValue; }
+					if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }
+					if ($fieldName == 'metabolite_name'){ $metabolites[] = $fieldValue; }
+				}			
+
+				// organism
+				if (count($organisms) > 1){
+					$metadata['organism'] = array();
+					foreach ($organisms as $organism){ $metadata['organism'][] = $organism; }
+				} else if (count($organisms) == 1){ $metadata['organism'] = $organisms[0]; }	
+				
+				// metabolites
+				if (count($metabolites) > 1){
+					$dataset['meta']['metabolites'] = array();
+					foreach ($metabolites as $metabolite){ $metadata['metabolites'][] = $metabolite; }
+				} else if (count($metabolites) == 1){ $metadata['metabolites'] = $metabolites[0]; }	
+
+				$dataset['meta'] = $metadata;
+				$datasets['datasets'][] = $dataset;				
 			}
-
-			// additional fields
-			$organisms 		= array();
-			$metabolites	= array();
-
-			$dataset['submitter']	= '';
-			$dataset['meta'] 		= array();			
-			foreach ($dataRecord->additional_fields->field as $field){
-
-				$fieldName = (string) $field->Attributes()->name;
-				$fieldValue = (string) $field;
-
-				if ($fieldName == 'submitter'){ $dataset['submitter'] = $fieldValue; }
-				if ($fieldName == 'technology_type'){ $dataset['meta']['analysis'] = $fieldValue; }
-				if ($fieldName == 'platform'){ $dataset['meta']['platform'] = $fieldValue; }
-				if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }
-				if ($fieldName == 'metabolite_name'){ $metabolites[] = $fieldValue; }
-
-			}			
-
-			// organism
-			if (count($organisms) > 1){
-				$dataset['meta']['organism'] = array();
-				foreach ($organisms as $organism){ $dataset['meta']['organism'][] = $organism; }
-			} else if (count($organisms) == 1){ $dataset['meta']['organism'] = $organisms[0]; }	
-			
-			// metabolites
-			if (count($metabolites) > 1){
-				$dataset['meta']['metabolites'] = array();
-				foreach ($metabolites as $metabolite){ $dataset['meta']['metabolites'][] = $metabolite; }
-			} else if (count($metabolites) == 1){ $dataset['meta']['metabolites'] = $metabolites[0]; }	
-
-			$datasets[$accession] = $dataset;
 		}
+
+		// convert to JSON and write file to cache
+		$jsonResponse = json_encode($datasets);
+		$fp = fopen($cacheFile, 'w');
+		fwrite($fp, $jsonResponse);
+		fclose($fp);		
 	}
 
-	echo json_encode(array_values($datasets));
+	echo $jsonResponse;
 ?>

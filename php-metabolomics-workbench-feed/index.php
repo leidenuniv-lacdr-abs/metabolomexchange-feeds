@@ -20,38 +20,80 @@
     header('Cache-Control: no-cache, must-revalidate');
     header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
     header('Content-type: application/json');
+    header("Access-Control-Allow-Origin: *"); // required for all clients to connect    
 
     // convert feed http://www.metabolomicsworkbench.org/data/DRCCStudySummary.php?Mode=StudySummary&OutputMode=File&OutputDataMode=MetabolomeXchange&OutputType=JSON
+    $feedUrl = 'http://www.metabolomicsworkbench.org/data/DRCCStudySummary.php?Mode=StudySummary&OutputMode=File&OutputDataMode=MetabolomeXchange&OutputType=JSON';    
     $jsonResponse = "";
-    $datasets = array();
 
-    $feedUrl = 'http://www.metabolomicsworkbench.org/data/DRCCStudySummary.php?Mode=StudySummary&OutputMode=File&OutputDataMode=MetabolomeXchange&OutputType=JSON';
-    $feedJSON = file_get_contents($feedUrl);
+    // set/determine use of cache
+    $cacheFile = md5($feedUrl) . '.cache';
+    if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 900 ) ) {
+        $jsonResponse = file_get_contents($cacheFile);
+    } else {
 
-    $feed = json_decode($feedJSON);
-    
-    foreach ($feed as $dataRecord) {
+        $datasets = array();
 
-        $dataRecord = (array) $dataRecord;
+        // add JSON-LD context
+        $datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';
 
-        if ($dataRecord['Study Status'] != '0'){
+        $datasets['provider'] = 'Metabolomics Workbench';
+        $datasets['url'] = 'http://www.metabolomicsworkbench.org/';
+        $datasets['description'] = 'The Metabolomics Workbench is a scalable and extensible informatics infrastructure which will serve as a national metabolomics resource. This is a companion to RCMRCs and is a part of the Common Fund Initiative in metabolomics. The Metabolomics Workbench will coordinate data activities of national and international metabolomics centers and initiatives, serve as a national data repository and develop a Workbench that will have data, query and analysis interfaces, and tools for interactive analysis and integration of metabolomics data.';
+
+        $datasets['datasets'] = array();        
+
+        $feedJSON = file_get_contents($feedUrl);
+
+        $feed = json_decode($feedJSON);
+        
+        foreach ($feed as $dataRecord) {
+
+            $dataRecord = (array) $dataRecord;
+
+            if ($dataRecord['Study Status'] != '0'){
+
+                $dataset = array();
+
+                // add JSON-LD context
+                $dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';                                  
+                
+                $dataset['accession'] = $dataRecord['Study ID'];
+                $dataset['title'] = $dataRecord['Study Title'];
+                $dataset['description'] = $dataRecord['Study Summary'];
+                $dataset['url'] = "http://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=" . $dataset['accession'];
+                $dataset['date'] = $dataRecord['Submitted'];
+                $dataset['submitter'] = $dataRecord['First Name'] . ' ' . $dataRecord['Last Name'];
+
+                $timestamp = ''; // convert date to timestamp
+                if (isset($dataset['date']) && $dataset['date'] != ''){
+                    list($year, $month, $day) = explode('-', $dataset['date']);
+                    $timestamp = mktime(0, 0, 0, $month, $day, $year);
+                }
+                $dataset['timestamp'] = $timestamp;                
+                
+                $metadata = array();
             
-            $accession = $dataRecord['Study ID'];
-            $datasets[$accession] = array();
-            $datasets[$accession]['accession'] = $accession;
-            $datasets[$accession]['title'] = $dataRecord['Study Title'];
-            $datasets[$accession]['description'] = $dataRecord['Study Summary'];
-            $datasets[$accession]['url'] = "http://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=" . $accession;
-            $datasets[$accession]['date'] = $dataRecord['Submitted'];
-            $datasets[$accession]['submitter'] = $dataRecord['First Name'] . ' ' . $dataRecord['Last Name'];
+                // add metadata JSON-LD
+                $metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';                
+
+                $metadata['species'] = $dataRecord['Species'];
+                $metadata['institute'] = $dataRecord['Institute'];
+                $metadata['department'] = $dataRecord['Department'];
+                $metadata['laboratory'] = $dataRecord['Laboratory'];
+                $metadata['analysis'] = $dataRecord['Analysis'];
             
-            $datasets[$accession]['meta'] = array();
-            $datasets[$accession]['meta']['species'] = $dataRecord['Species'];
-            $datasets[$accession]['meta']['institute'] = $dataRecord['Institute'];
-            $datasets[$accession]['meta']['department'] = $dataRecord['Department'];
-            $datasets[$accession]['meta']['laboratory'] = $dataRecord['Laboratory'];
-            $datasets[$accession]['meta']['analysis'] = $dataRecord['Analysis'];
+                $dataset['meta'] = $metadata;
+                $datasets['datasets'][] = $dataset;
+            }
         }
+
+        // convert to JSON and write file to cache
+        $jsonResponse = json_encode($datasets);
+        $fp = fopen($cacheFile, 'w');
+        fwrite($fp, $jsonResponse);
+        fclose($fp);        
     }
-    echo json_encode(array_values($datasets));
+
+    echo $jsonResponse;
 ?>
