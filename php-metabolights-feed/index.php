@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankeijer 
+ * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankemeier 
  * (Leiden University)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,13 +28,14 @@
 
 	// set/determine use of cache
 	$cacheFile = md5($feedUrl) . '.cache';
-	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 900 ) ) {
+	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 9000 ) ) {
 		$jsonResponse = file_get_contents($cacheFile);
 	} else {
 
 		$datasets = array();
 
-		$datasets['provider'] = 'MetaboLights';
+		$datasets['name'] = 'MetaboLights';
+		$datasets['shortname'] = 'mtbls';
 		$datasets['url'] = 'http://www.ebi.ac.uk/metabolights/';
 		$datasets['description'] = 'MetaboLights is a database for Metabolomics experiments and derived information. The database is cross-species, cross-technique and covers metabolite structures and their reference spectra as well as their biological roles, locations and concentrations, and experimental data from metabolic experiments.';
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankeijer 
+ * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankemeier 
  * (Leiden University)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@
 
     // set/determine use of cache
     $cacheFile = md5($feedUrl) . '.cache';
-    if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 900 ) ) {
+    if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 9000 ) ) {
         $jsonResponse = file_get_contents($cacheFile);
     } else {
 
@@ -37,7 +37,8 @@
         // add JSON-LD context
         $datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';
 
-        $datasets['provider'] = 'Metabolomics Workbench';
+        $datasets['name'] = 'Metabolomics Workbench';
+        $datasets['shortname'] = 'mwbs';
         $datasets['url'] = 'http://www.metabolomicsworkbench.org/';
         $datasets['description'] = 'The Metabolomics Workbench is a scalable and extensible informatics infrastructure which will serve as a national metabolomics resource. This is a companion to RCMRCs and is a part of the Common Fund Initiative in metabolomics. The Metabolomics Workbench will coordinate data activities of national and international metabolomics centers and initiatives, serve as a national data repository and develop a Workbench that will have data, query and analysis interfaces, and tools for interactive analysis and integration of metabolomics data.';
 

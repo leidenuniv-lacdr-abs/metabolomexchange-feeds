@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankeijer 
+ * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankemeier 
  * (Leiden University)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@
 
 	// set/determine use of cache
 	$cacheFile = md5($feedUrl) . '.cache';
-	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 900 ) ) {
+	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 9000 ) ) {
 		$jsonResponse = file_get_contents($cacheFile);
 	} else {
 
@@ -38,7 +38,8 @@
 		// add JSON-LD context
 		$datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';		
 
-		$datasets['provider'] = 'Metabolomic Repository Bordeaux';
+		$datasets['name'] = 'Metabolomic Repository Bordeaux';
+		$datasets['shortname'] = 'meryb';
 		$datasets['url'] = 'http://services.cbib.u-bordeaux2.fr/MERYB/home/home.php';
 		$datasets['description'] = 'MeRy-B is a plant metabolomics platform allowing the storage and visualisation of Nuclear Magnetic Resonance (NMR) metabolic profiles from plants. It contains plant metabolites and unknown compounds lists with information about experimental conditions and metabolite concentrations from several plant species compiled from a thousand of curated annotated NMR profiles on various organs or tissues.';
 

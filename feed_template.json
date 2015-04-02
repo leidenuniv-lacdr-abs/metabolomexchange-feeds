@@ -1,0 +1,40 @@
+{
+    "@context": "http://feeds.metabolomexchange.org/contexts/datacatalog.jsonld",
+    "name": "My Database",
+    "shortname": "mydatabase",
+    "url": "http://my.com/database",
+    "description": "My Database is a non-existing Metabolomics Database for testing",
+    "datasets":[
+      {
+          "@context": "http://feeds.metabolomexchange.org/contexts/dataset.jsonld",
+          "accession": "DS0000001",
+          "date": "2015-01-01",
+          "url": "http://my.com/database/DS0000001",
+          "description": "My Description of the dataset with accession DS0000001",
+          "submitter": "My Submitter",
+          "title": "My Dataset for the identification of...",
+          "meta": {
+              "@context": "http://feeds.metabolomexchange.org/contexts/metadata.jsonld",
+              "organism": "Homo sapiens (Human)",
+              "metabolites":["(3S)-3-hydroxy-L-aspartic acid","hypotaurine","oxalic acid", "etc..."],
+              "<key>": "<value>",
+              "<key>": ["<value1>","<value2>","<value3>","<value4>"]
+          }
+      },{
+          "@context": "http://feeds.metabolomexchange.org/contexts/dataset.jsonld",
+          "accession": "DS0000002",
+          "date": "2015-01-01",
+          "url": "http://my.com/database/DS0000002",
+          "description": "My Description of the dataset with accession DS0000002",
+          "submitter": "My Submitter",
+          "title": "My Dataset for the quantification of...",
+          "meta": {
+              "@context": "http://feeds.metabolomexchange.org/contexts/metadata.jsonld",
+              "organism": "Homo sapiens (Human)",
+              "metabolites":["(3S)-3-hydroxy-L-aspartic acid","hypotaurine","oxalic acid", "etc..."],
+              "<key>": "<value>",
+              "<key>": ["<value1>","<value2>","<value3>","<value4>"]
+          }
+      }
+    ]
+}

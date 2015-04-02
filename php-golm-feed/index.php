@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankeijer 
+ * Copyright 2014 Michael van Vliet (Leiden University), Thomas Hankemeier 
  * (Leiden University)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@
 
 	// set/determine use of cache
 	$cacheFile = md5($feedUrl) . '.cache';
-	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 900 ) ) {
+	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 9000 ) ) {
 		$jsonResponse = file_get_contents($cacheFile);
 	} else {
 
@@ -37,7 +37,8 @@
 		// add JSON-LD context
 		$datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';
 
-		$datasets['provider'] = 'Golm Metabolome Database';
+		$datasets['name'] = 'Golm Metabolome Database';
+		$datasets['shortname'] = 'golm';
 		$datasets['url'] = 'http://gmd.mpimp-golm.mpg.de';
 		$datasets['description'] = 'The Golm Metabolome Database (GMD) facilitates the search for and dissemination of reference mass spectra from biologically active metabolites quantified using gas chromatography (GC) coupled to mass spectrometry (MS). GC/MS profiling studies aiming at the identification of compounds from complex biological mixtures depend on the comparison of observed mass spectra and retention times with reference libraries such as the GMD. The GMD comprises mass spectra and retention time indices of pure reference substances and frequently observed mass spectral tags (MST: mass spectrum linked to chromatographic retention) of yet unidentified metabolites.';
 
