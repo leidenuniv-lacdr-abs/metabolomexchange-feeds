@@ -17,9 +17,6 @@
       "title": "dataset:name",
       "description": "dataset:description",
       "date": "xsd:date",      
-      "submitter": {
-         "@id": "dataset:contributor",
-         "@type": "person:name"
-      }      
+      "submitter": "dct:publisher"
    }
 }
