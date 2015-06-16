@@ -64,7 +64,9 @@
                 $dataset['description'] = $dataRecord['Study Summary'];
                 $dataset['url'] = "http://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=" . $dataset['accession'];
                 $dataset['date'] = $dataRecord['Submitted'];
-                $dataset['submitter'] = $dataRecord['First Name'] . ' ' . $dataRecord['Last Name'];
+                
+                $dataset['submitter'] = array();
+                $dataset['submitter'][] = $dataRecord['First Name'] . ' ' . $dataRecord['Last Name'];
 
                 $timestamp = ''; // convert date to timestamp
                 if (isset($dataset['date']) && $dataset['date'] != ''){

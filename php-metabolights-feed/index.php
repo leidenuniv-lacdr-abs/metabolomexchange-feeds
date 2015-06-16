@@ -81,7 +81,7 @@
 				$organisms 		= array();
 				$metabolites	= array();
 
-				$dataset['submitter']	= '';
+				$dataset['submitter'] = array();
 				$metadata = array();	
 
 				// add metadata JSON-LD
@@ -92,7 +92,7 @@
 					$fieldName = (string) $field->Attributes()->name;
 					$fieldValue = (string) $field;
 
-					if ($fieldName == 'submitter'){ $dataset['submitter'] = $fieldValue; }
+					if ($fieldName == 'submitter'){ $dataset['submitter'][] = $fieldValue; }
 					if ($fieldName == 'technology_type'){ $metadata['analysis'] = $fieldValue; }
 					if ($fieldName == 'platform'){ $metadata['platform'] = $fieldValue; }
 					if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }

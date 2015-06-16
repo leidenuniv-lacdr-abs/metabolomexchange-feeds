@@ -70,11 +70,11 @@
 			$dataset['timestamp'] = $timestamp;
 			
 			// submitter
-			$dataset['submitter']	= '';
+			$dataset['submitter']	= array();
 			foreach ($dataRecord->BibliographicData->AuthorList->Author as $authorIdx => $author){
 				$authorAttribs = $author->Attributes();
 				if ($authorAttribs['seq'] == 1){
-					$dataset['submitter'] = (string) $author->AuthorName;
+					$dataset['submitter'][] = (string) $author->AuthorName;
 				}
 			}
 			

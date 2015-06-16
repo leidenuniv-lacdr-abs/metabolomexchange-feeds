@@ -80,7 +80,8 @@
 			$organisms 		= array();
 			$metabolites	= array();
 
-			$dataset['submitter']	= 'Daniel Jacob';
+			$dataset['submitter'] = array();
+			$dataset['submitter'][] = 'Daniel Jacob';
 
 			// metadata
 			$metadata = array();				
