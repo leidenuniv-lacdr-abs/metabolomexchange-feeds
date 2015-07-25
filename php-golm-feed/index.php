@@ -46,12 +46,19 @@
 
 		$datasets['datasets'] = array();
 
-        $ctx = stream_context_create(array('http'=>array('timeout' => 15*60,)));
-		$feedXML = file_get_contents($feedUrl, false, $ctx);
+		$z = new XMLReader;
+		$z->open($feedUrl);
 
-		$feed = simplexml_load_string($feedXML);
+		$doc = new DOMDocument;
+
+		// move to the first <DataRecord /> node
+		while ($z->read() && $z->name !== 'DataRecord');
 		
-		foreach ($feed as $idx => $dataRecord) {
+		// foreach ($feed->entries->entry as $idx => $dataRecord) {
+		while ($z->name === 'DataRecord'){
+
+			//$dataRecord = new SimpleXMLElement($z->readOuterXML());
+			$dataRecord = simplexml_import_dom($doc->importNode($z->expand(), true));		
 			
 			$dataset = array();
 
@@ -117,6 +124,8 @@
 			
 			$dataset['meta'] = $metadata;
 			$datasets['datasets'][] = $dataset;
+
+			$z->next('DataRecord');
 		}
 
 		if (count($datasets['datasets']) >= 1){

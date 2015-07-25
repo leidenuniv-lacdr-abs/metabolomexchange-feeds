@@ -44,12 +44,19 @@
 		// add JSON-LD context
 		$datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';		
 
-        $ctx = stream_context_create(array('http'=>array('timeout' => 15*60,)));
-		$feedXML = file_get_contents($feedUrl, false, $ctx);
+		$z = new XMLReader;
+		$z->open($feedUrl);
 
-		$feed = simplexml_load_string($feedXML);
+		$doc = new DOMDocument;
+
+		// move to the first <entry /> node
+		while ($z->read() && $z->name !== 'entry');
 		
-		foreach ($feed->entries->entry as $idx => $dataRecord) {
+		// foreach ($feed->entries->entry as $idx => $dataRecord) {
+		while ($z->name === 'entry'){
+
+			//$dataRecord = new SimpleXMLElement($z->readOuterXML());
+			$dataRecord = simplexml_import_dom($doc->importNode($z->expand(), true));
 
 			$id_prefix = substr((string) $dataRecord->Attributes(),0,5);
 
@@ -76,7 +83,7 @@
 				$timestamp = ''; // convert date to timestamp
 				if (isset($dataset['date']) && $dataset['date'] != ''){
 					list($year, $month, $day) = explode('-', $dataset['date']);
-					$timestamp = mktime(0, 0, 0, $month, $day, $year);
+					$timestamp = @mktime(0, 0, 0, $month, $day, $year);
 				}
 				$dataset['timestamp'] = $timestamp;
 
@@ -117,6 +124,8 @@
 				$dataset['meta'] = $metadata;
 				$datasets['datasets'][] = $dataset;				
 			}
+
+		    $z->next('entry');
 		}
 
 		if (count($datasets['datasets']) >= 1){
