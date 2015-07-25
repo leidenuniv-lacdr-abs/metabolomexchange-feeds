@@ -22,16 +22,18 @@
 	header('Content-type: application/json');
 	header("Access-Control-Allow-Origin: *"); // required for all clients to connect	
 
+	set_time_limit(15*60); // 15 minutes
+
+	$feedReloadKey = 'myfeedreloadkey';
+
 	// convert feed ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml
 	$feedUrl = 'ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml';	
 	$jsonResponse = "";
 
 	// set/determine use of cache
 	$cacheFile = md5($feedUrl) . '.cache';
-	if ( file_exists($cacheFile) && ( (time() - filemtime($cacheFile)) <= 9000 ) ) {
-		$jsonResponse = file_get_contents($cacheFile);
-	} else {
-
+    if (!file_exists($cacheFile) || (isset($_GET['rl']) && $_GET['rl'] == $feedReloadKey) || (file_exists($cacheFile) && (time() - filemtime($cacheFile)) > 24*60*60 ) ) {
+		
 		$datasets = array();
 
 		$datasets['name'] = 'MetaboLights';
@@ -116,11 +118,19 @@
 			}
 		}
 
-		// convert to JSON and write file to cache
-		$jsonResponse = json_encode($datasets);
-		$fp = fopen($cacheFile, 'w');
-		fwrite($fp, $jsonResponse);
-		fclose($fp);		
+		if (count($datasets['datasets']) >= 1){
+			// convert to JSON and write file to cache
+			$jsonResponse = json_encode($datasets);
+			$fp = fopen($cacheFile, 'w');
+			fwrite($fp, $jsonResponse);
+			fclose($fp);
+		} else {
+			// in case the feed doesn't return any results we return the cached version
+			$jsonResponse = file_get_contents($cacheFile);
+		}
+
+	} else {
+		$jsonResponse = file_get_contents($cacheFile);				
 	}
 
 	echo $jsonResponse;
