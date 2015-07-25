@@ -40,7 +40,6 @@
         $datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';
 
         $datasets['name'] = 'Metabolomics Workbench';
-        $datasets['shortname'] = 'mwbs';
         $datasets['url'] = 'http://www.metabolomicsworkbench.org/';
         $datasets['description'] = 'The Metabolomics Workbench is a scalable and extensible informatics infrastructure which will serve as a national metabolomics resource. This is a companion to RCMRCs and is a part of the Common Fund Initiative in metabolomics. The Metabolomics Workbench will coordinate data activities of national and international metabolomics centers and initiatives, serve as a national data repository and develop a Workbench that will have data, query and analysis interfaces, and tools for interactive analysis and integration of metabolomics data.';
 

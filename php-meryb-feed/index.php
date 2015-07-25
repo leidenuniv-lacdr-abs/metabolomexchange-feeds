@@ -40,7 +40,6 @@
 		$datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';		
 
 		$datasets['name'] = 'Metabolomic Repository Bordeaux';
-		$datasets['shortname'] = 'meryb';
 		$datasets['url'] = 'http://services.cbib.u-bordeaux2.fr/MERYB/home/home.php';
 		$datasets['description'] = 'MeRy-B is a plant metabolomics platform allowing the storage and visualisation of Nuclear Magnetic Resonance (NMR) metabolic profiles from plants. It contains plant metabolites and unknown compounds lists with information about experimental conditions and metabolite concentrations from several plant species compiled from a thousand of curated annotated NMR profiles on various organs or tissues.';
 

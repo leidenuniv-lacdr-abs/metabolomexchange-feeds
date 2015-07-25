@@ -40,7 +40,6 @@
 		$datasets['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/datacatalog.jsonld';
 
 		$datasets['name'] = 'Golm Metabolome Database';
-		$datasets['shortname'] = 'golm';
 		$datasets['url'] = 'http://gmd.mpimp-golm.mpg.de';
 		$datasets['description'] = 'The Golm Metabolome Database (GMD) facilitates the search for and dissemination of reference mass spectra from biologically active metabolites quantified using gas chromatography (GC) coupled to mass spectrometry (MS). GC/MS profiling studies aiming at the identification of compounds from complex biological mixtures depend on the comparison of observed mass spectra and retention times with reference libraries such as the GMD. The GMD comprises mass spectra and retention time indices of pure reference substances and frequently observed mass spectral tags (MST: mass spectrum linked to chromatographic retention) of yet unidentified metabolites.';
 
