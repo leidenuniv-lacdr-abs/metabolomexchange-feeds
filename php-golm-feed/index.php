@@ -46,7 +46,8 @@
 
 		$datasets['datasets'] = array();
 
-		$feedXML = file_get_contents($feedUrl);
+        $ctx = stream_context_create(array('http'=>array('timeout' => 15*60,)));
+		$feedXML = file_get_contents($feedUrl, false, $ctx);
 
 		$feed = simplexml_load_string($feedXML);
 		

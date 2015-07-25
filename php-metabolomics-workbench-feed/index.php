@@ -46,7 +46,8 @@
 
         $datasets['datasets'] = array();        
 
-        $feedJSON = file_get_contents($feedUrl);
+        $ctx = stream_context_create(array('http'=>array('timeout' => 15*60,)));
+        $feedJSON = file_get_contents($feedUrl, false, $ctx);
 
         $feed = json_decode($feedJSON);
         
