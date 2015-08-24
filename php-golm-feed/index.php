@@ -122,7 +122,7 @@
 			} else if (count($organisms) == 1){ $metadata['organism'] = (string) $organisms; }	
 			
 			$dataset['meta'] = $metadata;
-			$datasets['datasets'][] = $dataset;
+			$datasets['datasets'][$dataset['accession']] = $dataset;
 
 			$z->next('DataRecord');
 		}

@@ -89,7 +89,7 @@
                 $metadata['analysis'] = $dataRecord['Analysis'];
             
                 $dataset['meta'] = $metadata;
-                $datasets['datasets'][] = $dataset;
+                $datasets['datasets'][$dataset['accession']] = $dataset;
             }
         }
 

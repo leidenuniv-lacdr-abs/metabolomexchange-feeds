@@ -117,7 +117,7 @@
 			} else if (count($metabolites) == 1){ $metadata['metabolites'] = $metabolites[0]; }	
 
 			$dataset['meta'] = $metadata;
-			$datasets['datasets'][] = $dataset;
+			$datasets['datasets'][$dataset['accession']] = $dataset;
 		}
 
 		if (count($datasets['datasets']) >= 1){
