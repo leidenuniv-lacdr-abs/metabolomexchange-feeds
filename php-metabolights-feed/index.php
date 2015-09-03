@@ -23,6 +23,7 @@
 	header("Access-Control-Allow-Origin: *"); // required for all clients to connect	
 
 	set_time_limit(15*60); // 15 minutes
+	date_default_timezone_set('Europe/London');
 
 	$feedReloadKey = 'myfeedreloadkey';
 
