@@ -27,8 +27,9 @@
 
 	$feedReloadKey = 'myfeedreloadkey';
 
-	// convert feed ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml
-	$feedUrl = 'ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml';	
+	// OLD convert feed ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml
+	// OLD $feedUrl = 'ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml';	
+	$feedUrl = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights_studies.xml";
 	$jsonResponse = "";
 
 	// set/determine use of cache
@@ -77,7 +78,7 @@
 				// dates
 				$dataset['date']		= '';
 				foreach ($dataRecord->dates->date as $date){
-					if ((string) $date->Attributes()->type == 'last_modification'){ $dataset['date'] = (string) $date->Attributes()->value; }				
+					if ((string) $date->Attributes()->type == 'publication'){ $dataset['date'] = (string) $date->Attributes()->value; }				
 				}
 
 				$timestamp = ''; // convert date to timestamp
