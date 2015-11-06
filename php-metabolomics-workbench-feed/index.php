@@ -27,8 +27,7 @@
 
     $feedReloadKey = 'myfeedreloadkey';      
 
-    // convert feed http://www.metabolomicsworkbench.org/data/DRCCStudySummary.php?Mode=StudySummary&OutputMode=File&OutputDataMode=MetabolomeXchange&OutputType=JSON
-    $feedUrl = 'http://www.metabolomicsworkbench.org/data/DRCCStudySummary.php?Mode=StudySummary&OutputMode=File&OutputDataMode=MetabolomeXchange&OutputType=JSON';    
+    $feedUrl = 'http://www.metabolomicsworkbench.org/rest/study/study_id/ST/summary';    
     $jsonResponse = "";
 
     // set/determine use of cache
@@ -55,43 +54,39 @@
 
             $dataRecord = (array) $dataRecord;
 
-            if ($dataRecord['Study Status'] != '0'){
+            $dataset = array();
 
-                $dataset = array();
-
-                // add JSON-LD context
-                $dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';                                  
-                
-                $dataset['accession'] = $dataRecord['Study ID'];
-                $dataset['title'] = $dataRecord['Study Title'];
-                $dataset['description'] = $dataRecord['Study Summary'];
-                $dataset['url'] = "http://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=" . $dataset['accession'];
-                $dataset['date'] = $dataRecord['Submitted'];
-                
-                $dataset['submitter'] = array();
-                $dataset['submitter'][] = $dataRecord['First Name'] . ' ' . $dataRecord['Last Name'];
-
-                $timestamp = ''; // convert date to timestamp
-                if (isset($dataset['date']) && $dataset['date'] != ''){
-                    list($year, $month, $day) = explode('-', $dataset['date']);
-                    $timestamp = mktime(0, 0, 0, $month, $day, $year);
-                }
-                $dataset['timestamp'] = $timestamp;                
-                
-                $metadata = array();
+            // add JSON-LD context
+            $dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';                                  
             
-                // add metadata JSON-LD
-                $metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';                
-
-                $metadata['species'] = $dataRecord['Species'];
-                $metadata['institute'] = $dataRecord['Institute'];
-                $metadata['department'] = $dataRecord['Department'];
-                $metadata['laboratory'] = $dataRecord['Laboratory'];
-                $metadata['analysis'] = $dataRecord['Analysis'];
+            $dataset['accession'] = $dataRecord['study_id'];
+            $dataset['title'] = $dataRecord['study_title'];
+            $dataset['description'] = $dataRecord['study_summary'];
+            $dataset['url'] = "http://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=" . $dataset['accession'];
+            $dataset['date'] = $dataRecord['submit_date'];
             
-                $dataset['meta'] = $metadata;
-                $datasets['datasets'][$dataset['accession']] = $dataset;
+            $dataset['submitter'] = array();
+            $dataset['submitter'][] = $dataRecord['first_name'] . ' ' . $dataRecord['last_name'];
+
+            $timestamp = ''; // convert date to timestamp
+            if (isset($dataset['date']) && $dataset['date'] != ''){
+                list($year, $month, $day) = explode('-', $dataset['date']);
+                $timestamp = mktime(0, 0, 0, $month, $day, $year);
             }
+            $dataset['timestamp'] = $timestamp;                
+            
+            $metadata = array();
+        
+            // add metadata JSON-LD
+            $metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';                
+
+            $metadata['species'] = $dataRecord['subject_species'];
+            $metadata['institute'] = $dataRecord['institute'];
+            $metadata['department'] = $dataRecord['department'];
+            $metadata['analysis'] = $dataRecord['study_type'];
+        
+            $dataset['meta'] = $metadata;
+            $datasets['datasets'][$dataset['accession']] = $dataset;
         }
 
         if (count($datasets['datasets']) >= 1){

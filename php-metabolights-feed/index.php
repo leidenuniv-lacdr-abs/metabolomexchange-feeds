@@ -27,9 +27,7 @@
 
 	$feedReloadKey = 'myfeedreloadkey';
 
-	// OLD convert feed ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml
-	// OLD $feedUrl = 'ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights.xml';	
-	$feedUrl = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb-eye_metabolights_studies.xml";
+	$feedUrl = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/xml_feeds/eb-eye_metabolights_studies.xml";
 	$jsonResponse = "";
 
 	// set/determine use of cache
