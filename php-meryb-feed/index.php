@@ -55,6 +55,7 @@
 		foreach ($feed->entries->entry as $idx => $dataRecord) {
 				
 			$dataset = array();
+			$dataset['description'] = array();			
 
 			// add JSON-LD context
 			$dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';					
@@ -64,7 +65,7 @@
 			$dataset['accession']	= (string) $accession;
 			$dataset['url']			= 'http://www.cbib.u-bordeaux2.fr/MERYB/res/project/' . (string) $accession;
 			$dataset['title']		= (string) $dataRecord->name;
-			$dataset['description']	= (string) $dataRecord->description;
+			$dataset['description'][]	= (string) $dataRecord->description;
 
 			// dates
 			$dataset['date']		= '';

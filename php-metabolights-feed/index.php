@@ -27,7 +27,7 @@
 
 	$feedReloadKey = 'myfeedreloadkey';
 
-	$feedUrl = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/xml_feeds/eb-eye_metabolights_studies.xml";
+	$feedUrl = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/thomsonreuters_metabolights_studies.xml";
 	$jsonResponse = "";
 
 	// set/determine use of cache
@@ -62,6 +62,10 @@
 			if ($id_prefix == 'MTBLS' && $dataRecord->name != 'PRIVATE STUDY'){
 				
 				$dataset = array();
+				$metadata = array();	
+
+				// add metadata JSON-LD
+				$metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';				
 
 				// add JSON-LD context
 				$dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';		
@@ -71,7 +75,7 @@
 				$dataset['accession']	= (string) $accession;
 				$dataset['url']			= 'http://www.ebi.ac.uk/metabolights/' . (string) $accession;
 				$dataset['title']		= (string) $dataRecord->name;
-				$dataset['description']	= (string) $dataRecord->description;
+				$dataset['description'][]	= (string) $dataRecord->description;
 
 				// dates
 				$dataset['date']		= '';
@@ -88,33 +92,69 @@
 
 				// additional fields
 				$organisms 		= array();
+				$organism_parts	= array();
 				$metabolites	= array();
 
-				$dataset['submitter'] = array();
-				$metadata = array();	
+				$dataset['description'] = array();
 
-				// add metadata JSON-LD
-				$metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';
+				// authors/submitters
+				$dataset['submitter'] = array();
+				foreach ($dataRecord->authorship->author as $author){
+					$dataset['submitter'][] = trim((string) $author->name);
+				}
+
+				// publictations
+				$dataset['publications'] = array();
+				foreach ($dataRecord->publications->publication as $publication){
+					$dataset['publications'][] = array(
+							'title'=>trim((string) $publication->title),
+							'doi'=>trim((string) $publication->doi),
+							'pubmed'=>trim((string) $publication->pubmed)
+						);
+				}				
 
 				foreach ($dataRecord->additional_fields->field as $field){
 
-					$fieldName = (string) $field->Attributes()->name;
-					$fieldValue = (string) $field;
+					$fieldName = strtolower((string) $field->Attributes()->name);
+					$fieldValue = trim((string) $field);
 
-					if ($fieldName == 'submitter'){ $dataset['submitter'][] = $fieldValue; }
-					if ($fieldName == 'technology_type'){ $metadata['analysis'] = $fieldValue; }
-					if ($fieldName == 'platform'){ $metadata['platform'] = $fieldValue; }
-					if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }
-					if ($fieldName == 'metabolite_name'){ $metabolites[] = $fieldValue; }
+					if ($fieldValue != ''){
+
+						// remove html
+						$fieldValue = str_replace("<p>", "", $fieldValue);
+						$fieldValue = str_replace(array("</p>", "</br>"), " ", $fieldValue);
+						$fieldValue = str_replace("  ", " ", $fieldValue);
+						
+						// see if we can add the protocols to the description
+						if (strpos($fieldName, '_protocol') >= 1){
+							$dataset['description'][] = trim(ucfirst(str_replace(array("protocol","_"), " ", $fieldName))) . ': ' . $fieldValue;
+						}
+
+						if ($fieldName == 'technology_type'){ $metadata['analysis'] = $fieldValue; }
+						if ($fieldName == 'instrument_platform'){ $metadata['platform'] = $fieldValue; }
+						if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }
+						if ($fieldName == 'organism part'){ $organism_parts[] = $fieldValue; }
+						if ($fieldName == 'metabolite_name'){ $metabolites[] = $fieldValue; }
+
+					}
 				}			
 
 				// organism
+				$organisms = array_unique($organisms);
 				if (count($organisms) > 1){
 					$metadata['organism'] = array();
 					foreach ($organisms as $organism){ $metadata['organism'][] = $organism; }
 				} else if (count($organisms) == 1){ $metadata['organism'] = $organisms[0]; }	
+
+				// organism part
+				$organism_parts = array_unique($organism_parts);
+				if (count($organism_parts) > 1){
+					$metadata['organism_parts'] = array();
+					foreach ($organism_parts as $organism_part){ $metadata['organism_parts'][] = $organism_part; }
+				} else if (count($organism_parts) == 1){ $metadata['organism_parts'] = $organism_parts[0]; }					
 				
 				// metabolites
+				$metabolites = array_unique($metabolites);
 				if (count($metabolites) > 1){
 					$dataset['meta']['metabolites'] = array();
 					foreach ($metabolites as $metabolite){ $metadata['metabolites'][] = $metabolite; }

@@ -55,13 +55,14 @@
             $dataRecord = (array) $dataRecord;
 
             $dataset = array();
+            $dataset['description'] = array();            
 
             // add JSON-LD context
             $dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';                                  
             
             $dataset['accession'] = $dataRecord['study_id'];
             $dataset['title'] = $dataRecord['study_title'];
-            $dataset['description'] = $dataRecord['study_summary'];
+            $dataset['description'][] = $dataRecord['study_summary'];
             $dataset['url'] = "http://www.metabolomicsworkbench.org/data/DRCCMetadata.php?Mode=Study&StudyID=" . $dataset['accession'];
             $dataset['date'] = $dataRecord['submit_date'];
             

@@ -61,6 +61,7 @@
 			$dataRecord = simplexml_import_dom($doc->importNode($z->expand(), true));		
 			
 			$dataset = array();
+			$dataset['description'] = array();			
 
 			// add JSON-LD context
 			$dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';		
@@ -70,7 +71,7 @@
 			$dataset['accession']	= (string) $accession;
 			$dataset['date']		= (string) substr($dataRecord->BibliographicData->Source->PublicationYear,0,10);
 			$dataset['url']			= (string) $dataRecord->BibliographicData->Source->SourceURL;
-			$dataset['description']	= (string) str_replace("\n"," ", $dataRecord->Abstract);	
+			$dataset['description'][]	= (string) str_replace("\n"," ", $dataRecord->Abstract);	
 
 			$timestamp = ''; // convert date to timestamp
 			if (isset($dataset['date']) && $dataset['date'] != ''){
