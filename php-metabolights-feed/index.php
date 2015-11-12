@@ -63,6 +63,7 @@
 				
 				$dataset = array();
 				$metadata = array();	
+				$dataset['description'] = array();				
 
 				// add metadata JSON-LD
 				$metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';				
@@ -94,8 +95,6 @@
 				$organisms 		= array();
 				$organism_parts	= array();
 				$metabolites	= array();
-
-				$dataset['description'] = array();
 
 				// authors/submitters
 				$dataset['submitter'] = array();
