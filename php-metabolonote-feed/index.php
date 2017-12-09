@@ -27,8 +27,17 @@
 
 	$feedReloadKey = 'myfeedreloadkey';
 
+	if (!isset($_SERVER['HTTP_HOST'])){
+        $_SERVER['HTTP_HOST'] = 'feeds.metabolomexchange.org';
+    }
+
+	# get datasets:     http://metabolonote.kazusa.or.jp/mnapi.php?action=getTopPageIds
+    # get dataset:      http://metabolonote.kazusa.or.jp/mnapi.php?action=getDataByMetadataId&id=SE1_MS1&output=json
+	# get create data:  http://metabolonote.kazusa.or.jp/mnapi.php?action=getCreateDateOfMetadata&id=SE10_S01_M01_D02
+    #                   http://metabolonote.kazusa.or.jp/mnapi.php?action=getCreateDateOfMetadata&id=SE10
+
 	// convert feed http://metabolonote.kazusa.or.jp/mnapi.php
-	$feedUrl = 'http://metabolonote.kazusa.or.jp/mnapi.php';
+	$feedUrl = 'http://metabolonote.kazusa.or.jp/mnapi.php?action=getAllPageIds';
 	$jsonResponse = "";
 
 	// set/determine use of cache
@@ -46,96 +55,141 @@
 
 		$datasets['datasets'] = array();
 
-		// fetch data
-	    $ctx = stream_context_create(array('http'=>array('timeout' => 15*60,)));
-//		$feedXML = file_get_contents($feedUrl, false, $ctx);
-//
-//		$feed = simplexml_load_string($feedXML);
-//
-//		foreach ($feed->entries->entry as $idx => $dataRecord) {
-//
-//			$dataset = array();
-//			$dataset['description'] = array();
-//
-//			// add JSON-LD context
-//			$dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';
-//
-//			$accession	= trim((string)$dataRecord->Attributes());
-//
-//			$dataset['accession']	= (string) $accession;
-//			$dataset['url']			= 'http://www.cbib.u-bordeaux2.fr/MERYB/res/project/' . (string) $accession;
-//			$dataset['title']		= (string) $dataRecord->name;
-//			$dataset['description'][]	= (string) $dataRecord->description;
-//
-//			// dates
-//			$dataset['date']		= '';
-//			foreach ($dataRecord->dates->date as $date){
-//				if ((string) $date->Attributes()->type == 'creation'){ $dataset['date'] = (string) $date->Attributes()->value; }
-//			}
-//
-//			$timestamp = ''; // convert date to timestamp
-//			if (isset($dataset['date']) && $dataset['date'] != ''){
-//				list($year, $month, $day) = explode('-', $dataset['date']);
-//				$timestamp = mktime(0, 0, 0, $month, $day, $year);
-//			}
-//			$dataset['timestamp'] = $timestamp;
-//
-//			// additional fields
-//			$organisms 		= array();
-//			$metabolites	= array();
-//
-//			$dataset['submitter'] = array();
-//			$dataset['submitter'][] = 'Daniel Jacob';
-//
-//			// metadata
-//			$metadata = array();
-//
-//			// add metadata JSON-LD
-//			$metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';
-//
-//			foreach ($dataRecord->additional_fields->field as $field){
-//
-//				$fieldName = (string) $field->Attributes()->name;
-//				$fieldValue = (string) $field;
-//
-//				if ($fieldName == 'submitter'){ $dataset['submitter'] = $fieldValue; }
-//				if ($fieldName == 'technology_type'){ $metadata['analysis'] = $fieldValue; }
-//				if ($fieldName == 'platform'){ $metadata['platform'] = $fieldValue; }
-//				if ($fieldName == 'organism'){ $organisms[] = $fieldValue; }
-//				if ($fieldName == 'metabolite_name'){ $metabolites[] = $fieldValue; }
-//
-//			}
-//
-//			// organism
-//			if (count($organisms) > 1){
-//				$metadata['organism'] = array();
-//				foreach ($organisms as $organism){ $metadata['organism'][] = $organism; }
-//			} else if (count($organisms) == 1){ $metadata['organism'] = $organisms[0]; }
-//
-//			// metabolites
-//			if (count($metabolites) > 1){
-//				$metadata['metabolites'] = array();
-//				foreach ($metabolites as $metabolite){ $metadata['metabolites'][] = $metabolite; }
-//			} else if (count($metabolites) == 1){ $metadata['metabolites'] = $metabolites[0]; }
-//
-//			$dataset['meta'] = $metadata;
-//			$datasets['datasets'][$dataset['accession']] = $dataset;
-//		}
-//
-//		if (count($datasets['datasets']) >= 1){
-//			// convert to JSON and write file to cache
-//			$jsonResponse = json_encode($datasets);
-//			$fp = fopen($cacheFile, 'w');
-//			fwrite($fp, $jsonResponse);
-//			fclose($fp);
-//		} else {
-//			// in case the feed doesn't return any results we return the cached version
-//			$jsonResponse = file_get_contents($cacheFile);
-//		}
-//
-//	} else {
-//		$jsonResponse = file_get_contents($cacheFile);
-//	}
+        $ctx = stream_context_create(array('http'=>array('timeout' => 15*60,)));
+        $feedJSON = file_get_contents($feedUrl, false, $ctx);
+
+        $feed = json_decode($feedJSON);
+
+        $arrDS = array();
+        foreach ($feed as $idx => $dset) {
+            $dsParts = explode("_", $dset);
+
+            # make sure it exists
+            if (!isset($arrDS[$dsParts[0]])){
+                $arrDS[$dsParts[0]] = array();
+                $arrDS[$dsParts[0]]['platforms'] = array();
+            }
+
+            # accession
+            $arrDS[$dsParts[0]]['accession'] = $dsParts[0];
+
+            # platform
+            if (isset($dsParts[1])) {
+                if (strtolower(substr($dsParts[1], 0, 2)) == 'ms') {
+                    $arrDS[$dsParts[0]]['platforms'][$dsParts[1]] = $dsParts[1];
+                }
+            }
+        }
+
+        // $arrDS = array_slice($arrDS, 8, 2); // limit datasets for testing
+
+        foreach ($arrDS as $idx => $ds){
+
+            // Find data created
+            $datasetCreateUrl = 'http://metabolonote.kazusa.or.jp/mnapi.php?action=getCreateDateOfMetadata&id=' . $ds['accession'] . '&output=json';
+            $datasetCreateJSON = file_get_contents($datasetCreateUrl, false, $ctx);
+            $dataCreateRecord = json_decode($datasetCreateJSON);
+            $dataCreateRecord = (array) $dataCreateRecord;
+            $dataCreated = current($dataCreateRecord);
+
+            $datasetUrl = 'http://metabolonote.kazusa.or.jp/mnapi.php?action=getDataByMetadataId&id=' . $ds['accession'] . '&output=json';
+            $datasetJSON = file_get_contents($datasetUrl, false, $ctx);
+            $dataRecord = json_decode($datasetJSON);
+
+            $dataRecord = (array) $dataRecord;
+            $dataRecord = (array) $dataRecord['sample_set'];
+
+            $dataset = array();
+            $dataset['description'] = array();
+
+            // add JSON-LD context
+            $dataset['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/dataset.jsonld';
+
+            $dataset['accession'] = $ds['accession'];
+            $dataset['title'] = $dataRecord['title'];
+            $dataset['description'][] = $dataRecord['description'];
+            $dataset['url'] = "http://metabolonote.kazusa.or.jp/" . $dataset['accession'] . ':/';
+            $dataset['timestamp'] = $dataCreated;
+
+            $date = new DateTime("@$dataCreated");
+            $dataset['date'] = $date->format('Y-m-d');
+
+            $dataset['submitter'] = array();
+
+            $arrSubmitters = explode(",", $dataRecord['authors']);
+
+            if (strpos($dataRecord['authors'], ':') !== false) {
+
+                foreach ($arrSubmitters as $sIdx => $submitter){
+
+                    $submitter = trim($submitter);
+                    $submitterParts = explode(" ", $submitter);
+                    $firstElement = trim(current($submitterParts));
+                    $lastElement = trim(end($submitterParts));
+
+                    if (strpos($firstElement, ':') !== false) {
+                        $dataset['submitter'][] = implode(" ", array_slice($submitterParts, 1, count($submitterParts)));
+                    } elseif ($lastElement == (int) $lastElement){
+                        $dataset['submitter'][] = implode(" ", array_slice($submitterParts, 0, count($submitterParts) - 1));
+                    } else {
+                        $dataset['submitter'][] = implode(" ", $submitterParts);
+                    }
+                }
+
+            } else {
+                foreach (array_slice($arrSubmitters, 0, count($arrSubmitters) - 1) as $aIdx => $author){
+                    $dataset['submitter'][] = trim($author);
+                }
+            }
+
+            $metadata = array();
+
+            // add metadata JSON-LD
+            $metadata['@context'] = 'http://'.$_SERVER['HTTP_HOST'].'/contexts/metadata.jsonld';
+
+            // add platform information
+            $platforms = array();
+            foreach ($ds['platforms'] as $pIdx => $platform){
+
+                $platformUrl = 'http://metabolonote.kazusa.or.jp/mnapi.php?action=getDataByMetadataId&id='.$ds['accession'].'_'.$platform.'&output=json';
+                $platformJSON = file_get_contents($platformUrl, false, $ctx);
+                $platformRecord = json_decode($platformJSON);
+                $platformRecord = (array) $platformRecord;
+                $platformRecord = (array) $platformRecord['analytical_method_details'];
+
+                $platforms[$platformRecord['instrument']] = $platformRecord['instrument'];
+                if ($platformRecord['description']) {
+                    $dataset['description'][] = $platform . ": " . $platformRecord['description'];
+                }
+            }
+
+            $metadata['platform'] = implode(", ", $platforms);
+
+            $dataset['meta'] = $metadata;
+
+            if (count($dataset['submitter'])) {
+                $datasets['datasets'][$dataset['accession']] = $dataset;
+            }
+        }
+
+		if (count($datasets['datasets']) >= 1){
+			// convert to JSON and write file to cache
+			$jsonResponse = json_encode($datasets);
+			$fp = fopen($cacheFile, 'w');
+			fwrite($fp, $jsonResponse);
+			fclose($fp);
+		} else {
+			// in case the feed doesn't return any results we return the cached version
+            try {
+                $jsonResponse = file_get_contents($cacheFile);
+            } catch (Exception $e) {
+                print('Caught exception: ' . $e->getMessage() . "\n");
+            }
+		}
+
+	} else {
+		$jsonResponse = file_get_contents($cacheFile);
+	}
 
 	echo $jsonResponse;
 ?>

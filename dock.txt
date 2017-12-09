@@ -1,0 +1,1 @@
+docker run -it -p 80:80 -v "$PWD":/var/www/html php:5.6-apache-jessie
